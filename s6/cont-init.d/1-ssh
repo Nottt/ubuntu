@@ -1,0 +1,65 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Install necessary packages
+
+apt-get update > /dev/null 2>&1 && apt-get install -y openssh-server > /dev/null 2>&1
+
+# Configure a standard utf english locale
+
+mkdir /var/run/sshd
+
+# If password is given, allow password logins and change root password
+
+if [ ! -z "$PASSWORD" ]; then PasswordAuthentication="PasswordAuthentication yes" && echo root:"$PASSWORD" | chpasswd; fi
+
+# Secure SSH
+
+cat << EOF > /etc/ssh/sshd_config
+Port 22
+
+Protocol 2
+
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+KexAlgorithms curve25519-sha256@libssh.org
+Ciphers chacha20-poly1305@openssh.com
+MACs hmac-sha2-512
+
+PubkeyAuthentication yes
+PubkeyAcceptedKeyTypes ssh-ed25519
+AuthorizedKeysFile /etc/ssh/authorized_keys
+
+PermitRootLogin yes
+AllowUsers root
+
+StrictModes yes
+
+LoginGraceTime 120
+TCPKeepAlive yes
+MaxStartups 3:60:10
+
+HostbasedAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+${PasswordAuthentication:-PasswordAuthentication no}
+UsePAM yes
+X11Forwarding no
+
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+SyslogFacility AUTH
+LogLevel INFO
+EOF
+
+cat > /etc/ssh/authorized_keys <<EOF
+$SSH_KEY
+EOF
+
+chmod 600 /etc/ssh/authorized_keys
+
+# SSH login fix. Otherwise user is kicked off after login
+
+sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+echo "export VISIBLE=now" >> /etc/profile
