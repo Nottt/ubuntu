@@ -5,13 +5,11 @@
 
 apt-get update > /dev/null 2>&1 && apt-get install -y openssh-server > /dev/null 2>&1
 
-# Configure a standard utf english locale
-
 mkdir /var/run/sshd
 
 # If password is given, allow password logins and change root password
 
-if [ ! -z "$PASSWORD" ]; then PasswordAuthentication="PasswordAuthentication yes" && echo root:"$PASSWORD" | chpasswd; fi
+if [ -n "$PASSWORD" ]; then PasswordAuthentication="PasswordAuthentication yes" && echo root:"$PASSWORD" | chpasswd; fi
 
 # Secure SSH
 
