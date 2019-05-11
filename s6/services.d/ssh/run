@@ -1,4 +1,4 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
-exec s6-setuidgid root /usr/sbin/sshd -D
+exec s6-setuidgid root /usr/sbin/sshd -D -E /var/log/auth.log
